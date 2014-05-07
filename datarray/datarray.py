@@ -892,9 +892,21 @@ class DataArray(np.ndarray):
                             '%s, %s'%(self.names, other.names))
                 if that_ax.labels != this_ax.labels:
                     if that_ax.labels is not None and this_ax.labels is not None:
-                        raise NamedAxisError(
-                            'Axis labels are incompatible for '\
-                            'a binary operation.')
+                        if set(that_ax.labels) == set(this_ax.labels):
+                            # order is different, lets reorder them
+           #                 raise Exception("crap")
+                            mapper = [this_ax.labels.index(label) for label in
+                                        that_ax.labels]
+                            # create indexer which does nothing
+                            indexer = [np.s_[:]] * len(self.axes)
+                            # replace index at current axes
+                            indexer[this_ax.index] = mapper
+                            print indexer
+                            obj = obj[indexer]
+                        else:
+                            raise NamedAxisError(
+                                'Axis labels are incompatible for '\
+                                'a binary operation.')
 
                 # XXX: Does this dimension compatibility check happen
                 #      before __array_prepare__ is even called? This
