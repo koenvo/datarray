@@ -451,10 +451,13 @@ class Axis(object):
         for a in parent_arr.axes:
             newaxes.append( a._copy(parent_arr=parent_arr) )
         
-        if isinstance(key, slice):
+        if isinstance(key, slice) or isinstance(key, tuple):
             # we need to find the labels, if any
             if self.labels:
-                newlabels = self.labels[key]
+                if isinstance(key, tuple):
+                    newlabels = [self.labels[idx] for idx in key]
+                else:
+                    newlabels = self.labels[key]
             else:
                 newlabels = None
             # insert new Axis with sliced labels
@@ -511,11 +514,9 @@ class Axis(object):
         else:
             lookups = (key.start, key.stop)
         
-        looked_up = []
-        for a in lookups:
-            if a is None:
-                looked_up.append(a)
-                continue
+
+        def _lookup(a):
+            # lookup a single label
             try:
                 idx = self._label_dict[a]
             except KeyError:
@@ -524,6 +525,19 @@ class Axis(object):
                         'Could not find an index to match %s'%str(a)
                         )
                 idx = a
+            return idx
+
+        looked_up = []
+        for a in lookups:
+            if a is None:
+                looked_up.append(a)
+                continue
+
+            if isinstance(a, tuple):
+                # lookup every label in tuple
+                idx = tuple(map(_lookup, a))
+            else:
+                idx = _lookup(a)
             looked_up.append(idx)
 
         # if not a slice object, then pop in the translated index and return
