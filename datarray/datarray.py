@@ -908,15 +908,20 @@ class DataArray(np.ndarray):
                     if that_ax.labels is not None and this_ax.labels is not None:
                         if set(that_ax.labels) == set(this_ax.labels):
                             # order is different, lets reorder them
-           #                 raise Exception("crap")
-                            mapper = [this_ax.labels.index(label) for label in
-                                        that_ax.labels]
+                            mapper = [that_ax.labels.index(label) for label in
+                                        this_ax.labels]
                             # create indexer which does nothing
                             indexer = [np.s_[:]] * len(self.axes)
                             # replace index at current axes
                             indexer[this_ax.index] = mapper
-                            print indexer
-                            obj = obj[indexer]
+
+                            # this modifies the original array.. should not happen!
+                            super(DataArray, other).__setitem__(
+                                slice(None, None, None), 
+                                super(DataArray, other).__getitem__(indexer))
+
+                            # push the transforms so these can be rolled back in the wrapper
+                            other.__indexer = indexer
                         else:
                             raise NamedAxisError(
                                 'Axis labels are incompatible for '\
@@ -952,6 +957,7 @@ class DataArray(np.ndarray):
 
             # walk back from the last axis on each array to get the
             # correct names/labels
+            print "asdasd", other.__indexer
             these_axes = list(self.axes)
             those_axes = list(other.axes)
             ax_spec = []
